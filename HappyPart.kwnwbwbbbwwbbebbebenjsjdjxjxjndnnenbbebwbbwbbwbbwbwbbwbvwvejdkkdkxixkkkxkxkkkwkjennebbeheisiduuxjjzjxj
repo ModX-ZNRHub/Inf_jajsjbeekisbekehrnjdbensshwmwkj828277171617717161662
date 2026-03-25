@@ -1,0 +1,109 @@
+-- [[ SERVICES ]]
+local LP  = game:GetService("Players").LocalPlayer
+local PG  = LP:WaitForChild("PlayerGui")
+local Debris = game:GetService("Debris")
+local TS = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+
+-- [[ CONFIG ]]
+local MAP_POS = LP.Character.HumanoidRootPart.Position + Vector3.new(0, 0, 15)
+local Population = {}
+
+---------------------------------------------------------
+-- 1. HIỆU ỨNG VUI VẺ (JOY PARTICLES)
+---------------------------------------------------------
+local function PlaySocialEffect(part, col)
+    local p = Instance.new("Part", game.Workspace); p.Anchored, p.CanCollide = true, false
+    p.Size, p.Position = Vector3.new(0.5, 0.5, 0.5), part.Position + Vector3.new(math.random(-2,2), 4, math.random(-2,2))
+    p.Color, p.Material, p.Shape = col or Color3.new(1, 1, 0), Enum.Material.Neon, Enum.PartType.Ball
+    Debris:AddItem(p, 0.5); TS:Create(p, TweenInfo.new(0.5), {Position = p.Position + Vector3.new(0, 5, 0), Transparency = 1, Size = Vector3.new(0,0,0)}):Play()
+end
+
+---------------------------------------------------------
+-- 2. AI SIÊU KẾT NỐI (ĐUỔI BẮT - TỤ TẬP)
+---------------------------------------------------------
+local function ApplySocialAI(bot)
+    local hum = bot:WaitForChild("Humanoid")
+    local root = bot:WaitForChild("HumanoidRootPart")
+    
+    task.spawn(function()
+        while bot.Parent do
+            -- Tìm bạn thân gần nhất
+            local friend, minDist = nil, 500
+            for _, other in pairs(Population) do
+                if other ~= bot and other.Parent then
+                    local d = (root.Position - other.HumanoidRootPart.Position).Magnitude
+                    if d < minDist then minDist, friend = d, other end
+                end
+            end
+
+            local behavior = math.random(1, 3)
+
+            if friend and minDist < 100 then
+                if behavior == 1 then -- CHƠI ĐUỔI BẮT (Tag Game)
+                    hum.WalkSpeed = 35
+                    hum:MoveTo(friend.HumanoidRootPart.Position)
+                    if minDist < 10 then PlaySocialEffect(root, Color3.new(1, 0.5, 0)) end -- Chạm được bạn
+                    task.wait(2)
+                elseif behavior == 2 then -- TỤ TẬP TÁN GẪU (Group Up)
+                    hum.WalkSpeed = 15
+                    hum:MoveTo(friend.HumanoidRootPart.Position + Vector3.new(5, 0, 5))
+                    if minDist < 12 then 
+                        for i=1,3 do PlaySocialEffect(root, Color3.new(0, 1, 1)); task.wait(0.5) end
+                    end
+                else -- CÙNG NHAU NHẢY NHÓT (Sync Jump)
+                    hum.WalkSpeed = 0
+                    hum.Jump = true
+                    PlaySocialEffect(root, Color3.new(1, 0, 1))
+                    task.wait(1)
+                end
+            else
+                -- Không có bạn gần đó thì đi tìm bạn (Social Search)
+                hum.WalkSpeed = 20
+                hum:MoveTo(MAP_POS + Vector3.new(math.random(-150, 150), 0, math.random(-150, 150)))
+                task.wait(3)
+            end
+            task.wait(0.2)
+        end
+    end)
+end
+
+---------------------------------------------------------
+-- 3. SPAWN ĐƠN LẺ & GUI KÉO THẢ (NEON)
+---------------------------------------------------------
+local function SpawnSocialBot()
+    local B = Instance.new("Model", game.Workspace); Instance.new("Humanoid", B)
+    local R = Instance.new("Part", B); R.Name, R.Size = "HumanoidRootPart", Vector3.new(1.4, 2, 0.8)
+    R.Position = MAP_POS + Vector3.new(math.random(-20, 20), 5, math.random(-20, 20))
+    R.Color, R.Material = Color3.fromRGB(255, 215, 190), Enum.Material.SmoothPlastic
+    
+    table.insert(Population, B)
+    ApplySocialAI(B)
+end
+
+-- GUI KÉO THẢ (NEON BORDER)
+local G = Instance.new("ScreenGui", PG); G.Name = "SocialJoyV33"
+local F = Instance.new("Frame", G); F.Size, F.Position = UDim2.new(0, 180, 0, 130), UDim2.new(0.1, 0, 0.3, 0)
+F.BackgroundColor3 = Color3.fromRGB(10, 10, 10); F.BorderSizePixel = 0; Instance.new("UICorner", F).CornerRadius = UDim.new(0, 15)
+local Stroke = Instance.new("UIStroke", F); Stroke.Color = Color3.fromRGB(0, 255, 150); Stroke.Thickness = 3
+local function Drag(f)
+    local d, s, p, id = false, nil, nil, nil
+    f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then d, s, p, id = true, i.Position, f.Position, i end end)
+    UIS.InputChanged:Connect(function(i) if d and i == id then local dl = i.Position - s; f.Position = UDim2.new(p.X.Scale, p.X.Offset + dl.X, p.Y.Scale, p.Y.Offset + dl.Y) end end)
+    UIS.InputEnded:Connect(function(i) if i == id then d = false end end)
+end
+Drag(F)
+
+local function Btn(txt, y, fn, col)
+    local b = Instance.new("TextButton", F); b.Size, b.Position, b.Text = UDim2.new(0.9, 0, 0, 32), UDim2.new(0.05, 0, 0, y), txt
+    b.BackgroundColor3, b.TextColor3, b.Font = col or Color3.fromRGB(30,30,30), Color3.new(1,1,1), Enum.Font.GothamBold
+    b.TextSize = 10; Instance.new("UICorner", b); b.MouseButton1Click:Connect(fn)
+end
+
+Btn("SPAWN BẠN MỚI (+1)", 15, SpawnSocialBot, Color3.fromRGB(0, 180, 100))
+Btn("TẬP TRUNG LẠI ĐÂY", 55, function() for _,v in pairs(Population) do v.HumanoidRootPart.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.new(math.random(-10,10), 5, math.random(-10,10)) end end)
+Btn("XÓA HẾT BẠN", 95, function() for _, v in pairs(Population) do v:Destroy() end Population = {} end, Color3.fromRGB(150, 0, 0))
+
+-- SÀN PHẲNG (CHO DỄ CHƠI)
+local f = Instance.new("Part", game.Workspace); f.Size, f.Position, f.Anchored = Vector3.new(1000, 2, 1000), MAP_POS - Vector3.new(0, 5, 0), true
+f.Color, f.Material = Color3.fromRGB(50, 80, 50), Enum.Material.Grass
