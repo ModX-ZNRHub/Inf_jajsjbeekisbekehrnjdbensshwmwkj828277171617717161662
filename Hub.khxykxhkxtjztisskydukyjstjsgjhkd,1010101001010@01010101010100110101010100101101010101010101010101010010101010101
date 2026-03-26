@@ -5,6 +5,7 @@ local discordLink = "https://discord.gg/apk5UcsBz"
 
 -- [[ RAW DATA - TỰ ĐỘNG GOM NHÓM CHUẨN ĐÉT ]]
 local raw_scripts = {
+    {name = "IY", tab = "IY.Link.Script", url = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
     {name = "Noclip", tab = "Normal.Script", url = "https://gist.githubusercontent.com/WERTIME-Script/f33851272b337ff07173e532e35fa570/raw/cf202a69a62024e09b4285377fc94ca1906a49d6/gistfile1.txt"},
     {name = "TpWalk", tab = "Normal.Script", url = "https://gist.githubusercontent.com/WERTIME-Script/a364b27c0b3d370369df985cd398ef2f/raw/b76dfaa47c95cdc1d80bdd87e8c846fcd6cf09b3/gistfile1.txt"},
     {name = "Speed", tab = "Normal.Script", url = "https://gist.githubusercontent.com/WERTIME-Script/1feee847ae22d47004f8d9b99ff3b6c4/raw/bc73561563f3690b717e6df91485c5817855eae8/Normal"},
