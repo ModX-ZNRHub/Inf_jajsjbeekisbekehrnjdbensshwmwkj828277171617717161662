@@ -1,0 +1,182 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+local SETTINGS = {
+    TargetY = -50000,
+    FloorSize = Vector3.new(200, 1, 200),
+    IsActive = false,
+    NeonColor = Color3.fromRGB(0, 255, 255)
+}
+
+local phantomFloor = nil
+workspace.FallenPartsDestroyHeight = -math.huge
+
+local function getPhantomFloor()
+    if not phantomFloor or not phantomFloor.Parent then
+        phantomFloor = Instance.new("Part")
+        phantomFloor.Name = "ModX_VoidBase"
+        phantomFloor.Size = SETTINGS.FloorSize
+        phantomFloor.Transparency = 1 
+        phantomFloor.Anchored = true
+        phantomFloor.CanCollide = true
+        phantomFloor.Parent = workspace
+    end
+    return phantomFloor
+end
+
+RunService.Heartbeat:Connect(function()
+    if not SETTINGS.IsActive then return end
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if hrp and hum then
+        local currentCF = hrp.CFrame
+        hrp.CFrame = CFrame.new(currentCF.X, SETTINGS.TargetY + 3.5, currentCF.Z) * (currentCF - currentCF.Position)
+
+        hrp.AssemblyLinearVelocity = Vector3.new(
+            hrp.AssemblyLinearVelocity.X,
+            0,
+            hrp.AssemblyLinearVelocity.Z
+        )
+        
+        local floor = getPhantomFloor()
+        floor.CFrame = CFrame.new(hrp.Position.X, SETTINGS.TargetY, hrp.Position.Z)
+        
+        if hum.Health < 100 then hum.Health = 100 end
+    end
+end)
+
+-- UI
+local sg = Instance.new("ScreenGui", player.PlayerGui)
+sg.Name = "ModX_50K_Final"
+sg.ResetOnSpawn = false
+
+local hitbox = Instance.new("Frame", sg)
+hitbox.Size = UDim2.new(0, 170, 0, 70) 
+hitbox.Position = UDim2.new(0.1, 0, 0.1, 0)
+hitbox.BackgroundTransparency = 1
+hitbox.Active = true
+
+local main = Instance.new("Frame", hitbox)
+main.Size = UDim2.new(0, 140, 0, 40)
+main.Position = UDim2.new(0.5, -70, 0.5, -20)
+main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+main.BorderSizePixel = 0
+
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = SETTINGS.NeonColor
+stroke.Thickness = 3 -- 🔥 VIỀN DÀY
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 8)
+
+local btn = Instance.new("TextButton", main)
+btn.Size = UDim2.new(1, 0, 1, 0)
+btn.BackgroundTransparency = 1
+btn.Text = "VOID: OFF"
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 11
+
+-- 🔥 CONFIRM UI
+local confirmFrame = Instance.new("Frame", sg)
+confirmFrame.Size = UDim2.new(0, 200, 0, 100)
+confirmFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+confirmFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+confirmFrame.Visible = false
+confirmFrame.BorderSizePixel = 0
+
+Instance.new("UICorner", confirmFrame).CornerRadius = UDim.new(0, 8)
+
+local confirmStroke = Instance.new("UIStroke", confirmFrame)
+confirmStroke.Color = SETTINGS.NeonColor
+confirmStroke.Thickness = 2
+
+local text = Instance.new("TextLabel", confirmFrame)
+text.Size = UDim2.new(1, 0, 0.5, 0)
+text.BackgroundTransparency = 1
+text.Text = "bạn chắc chắn ư?"
+text.TextColor3 = Color3.new(1,1,1)
+text.Font = Enum.Font.GothamBold
+text.TextSize = 12
+
+local backBtn = Instance.new("TextButton", confirmFrame)
+backBtn.Size = UDim2.new(0.5, -5, 0.5, -5)
+backBtn.Position = UDim2.new(0, 5, 0.5, 0)
+backBtn.Text = "quay lại"
+backBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+backBtn.TextColor3 = Color3.new(1,1,1)
+
+local okBtn = Instance.new("TextButton", confirmFrame)
+okBtn.Size = UDim2.new(0.5, -5, 0.5, -5)
+okBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+okBtn.Text = "tiếp tục"
+okBtn.BackgroundColor3 = SETTINGS.NeonColor
+okBtn.TextColor3 = Color3.new(0,0,0)
+
+-- DRAG (giữ nguyên bản mượt)
+local dragging = false
+local dragInput, dragStart, startPos
+
+hitbox.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 
+    or input.UserInputType == Enum.UserInputType.Touch then
+        
+        dragging = true
+        dragStart = input.Position
+        startPos = hitbox.Position
+        dragInput = input
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement 
+    or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if dragging and dragInput then
+        local delta = dragInput.Position - dragStart
+        hitbox.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- LOGIC BUTTON
+btn.MouseButton1Click:Connect(function()
+    if not SETTINGS.IsActive then
+        confirmFrame.Visible = true
+    else
+        SETTINGS.IsActive = false
+        btn.Text = "VOID: OFF"
+        btn.TextColor3 = Color3.fromRGB(255, 50, 50)
+        stroke.Color = Color3.fromRGB(255, 50, 50)
+        if phantomFloor then phantomFloor:Destroy() end
+    end
+end)
+
+backBtn.MouseButton1Click:Connect(function()
+    confirmFrame.Visible = false
+end)
+
+okBtn.MouseButton1Click:Connect(function()
+    confirmFrame.Visible = false
+    SETTINGS.IsActive = true
+    btn.Text = "VOID: -50K (ON)"
+    btn.TextColor3 = SETTINGS.NeonColor
+    stroke.Color = SETTINGS.NeonColor
+end)
